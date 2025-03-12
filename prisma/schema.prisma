@@ -1,0 +1,214 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Villa modeli
+model Villa {
+  id                   String          @id @default(cuid())
+  name                 String
+  originalName         String?
+  code                 String          @unique
+  description          String
+  price               Float
+  currency            String          @default("USD")
+  images              String[]
+  features            String[]        
+  location            String
+  bedrooms            Int
+  bathrooms           Int
+  maxGuests           Int
+  minStayDays         Int             @default(1)
+  isActive            Boolean         @default(true)
+  isFeatured          Boolean         @default(false)
+  
+  // Yeni eklenecek alanlar
+  rating              Float?          // Villa puanı
+  reviewCount         Int?            // Değerlendirme sayısı
+  amenities           Json?           // { icon: string, name: string }[] şeklinde
+  size                String?         // Villa büyüklüğü (m²)
+  tags                String[]        // VILLA_TAGS değerleri
+  discount            String?         // İndirim tutarı
+  
+  // Mevcut alanlar
+  ownerName           String
+  identityNumber      String
+  phoneNumber         String
+  ibanOwner           String
+  ibanNumber          String
+  email               String
+  tourismLicenseNumber String
+  mapLink             String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  // İlişkiler
+  distances           Distance?
+  seasonalPrices      SeasonalPrice[]
+  bookings            Booking[]
+  activities          Activity[]
+  reviews             Review[]        // Review ilişkisi
+
+  @@index([location])
+}
+
+// Mesafe bilgileri
+model Distance {
+  id              String   @id @default(cuid())
+  miniMarket      Int
+  restaurant      Int
+  publicTransport Int
+  beach           Int
+  airport         Int
+  cityCenter      Int
+  
+  // İlişki
+  villa          Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  villaId        String   @unique
+}
+
+// Sezonluk fiyatlar
+model SeasonalPrice {
+  id        String   @id @default(cuid())
+  startDate DateTime
+  endDate   DateTime
+  price     Float
+  currency  String
+  months    Int[]
+  
+  // İlişki
+  villa     Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  villaId   String
+
+  @@index([villaId])
+  @@index([startDate, endDate])
+}
+
+// Rezervasyonlar
+model Booking {
+  id              String    @id @default(cuid())
+  startDate       DateTime
+  endDate         DateTime
+  status          String    // 'pending', 'confirmed', 'blocked', 'cancelled'
+  price           Float
+  currency        String
+  title           String?
+  villaName       String
+  villaLocation   String
+  maxGuests       Int
+  specialRequests String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Misafir bilgileri
+  contactPerson   ContactPerson?
+  guests          Guest[]
+
+  // İlişkiler
+  villa          Villa     @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  villaId        String
+  activities     Activity[]
+
+  @@index([villaId, status])
+  @@index([startDate, endDate])
+}
+
+// İletişim kişisi
+model ContactPerson {
+  id             String   @id @default(cuid())
+  fullName       String
+  email          String
+  phone          String
+  identityNumber String
+  
+  // İlişki
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId      String   @unique
+}
+
+// Misafirler
+model Guest {
+  id             String   @id @default(cuid())
+  fullName       String
+  identityNumber String
+  
+  // İlişki
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId      String
+
+  @@index([bookingId])
+}
+
+// Aktivite kayıtları
+model Activity {
+  id          String   @id @default(cuid())
+  type        String   // 'villa_added', 'booking_added', 'price_updated', 'booking_cancelled'
+  title       String
+  description String
+  date        DateTime @default(now())
+  user        String?
+  
+  // İlişkiler
+  villa       Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  villaId     String
+  booking     Booking? @relation(fields: [bookingId], references: [id])
+  bookingId   String?
+
+  @@index([villaId])
+  @@index([type])
+  @@index([date])
+}
+
+// Kullanıcılar
+model User {
+  id        String        @id @default(cuid())
+  email     String        @unique
+  name      String?
+  password  String
+  role      String        @default("user") // 'admin', 'user'
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[] // Yeni eklenen ilişki
+
+  @@index([email])
+}
+
+// Chat geçmişi
+model ChatMessage {
+  id        String   @id @default(cuid())
+  role      String   // 'user' veya 'assistant'
+  content   String   @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String   // Konuşma oturumu ID'si
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+// Değerlendirmeler için yeni model
+model Review {
+  id          String   @id @default(cuid())
+  rating      Int
+  comment     String   @db.Text
+  firstName   String
+  lastName    String
+  email       String
+  date        DateTime @default(now())
+  likes       Int      @default(0)
+  
+  // Villa ilişkisi
+  villa       Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  villaId     String
+
+  @@index([villaId])
+  @@index([date])
+}

@@ -118,4 +118,59 @@ export async function POST(
       details: error instanceof Error ? error.message : 'Bilinmeyen hata'
     }, { status: 500 });
   }
+}
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getUser();
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
+    const { id } = await context.params;
+
+    const seasonalPrices = await prisma.seasonalPrice.findMany({
+      where: { villaId: id },
+      orderBy: { startDate: 'asc' }
+    });
+
+    return NextResponse.json(seasonalPrices);
+
+  } catch (error) {
+    console.error('Sezonluk fiyatlar getirilirken hata:', error);
+    return NextResponse.json({ error: 'Sezonluk fiyatlar getirilemedi' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getUser();
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
+    const { id } = await context.params;
+    const { searchParams } = new URL(request.url);
+    const priceId = searchParams.get('priceId');
+
+    if (!priceId) {
+      return NextResponse.json({ error: 'Fiyat ID\'si gerekli' }, { status: 400 });
+    }
+
+    await prisma.seasonalPrice.delete({
+      where: { id: priceId }
+    });
+
+    return NextResponse.json({ message: 'Sezonluk fiyat başarıyla silindi' });
+
+  } catch (error) {
+    console.error('Sezonluk fiyat silinirken hata:', error);
+    return NextResponse.json({ error: 'Sezonluk fiyat silinemedi' }, { status: 500 });
+  }
 } 

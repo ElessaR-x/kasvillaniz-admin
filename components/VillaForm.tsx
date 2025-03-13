@@ -6,6 +6,10 @@ import { currencies, CurrencyCode } from '@/utils/currency';
 import { useVilla } from '@/store/VillaContext';
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Editor } from '@tinymce/tinymce-react';
+
+
 
 // Villa özellikleri listesi
 const villaFeatures = [
@@ -16,7 +20,9 @@ const villaFeatures = [
   { id: 'Kış Aylarına Uygun', label: 'Kış Aylarına Uygun', icon: '❄️' },
   { id: 'Evcil Hayvan Dostu', label: 'Evcil Hayvan Dostu', icon: '🐾' },
   { id: 'Sonsuzluk Havuzu', label: 'Sonsuzluk Havuzu', icon: '🏊' },
-  { id: 'Jakuzi', label: 'Jakuzi', icon: '💦' }
+  { id: 'Jakuzi', label: 'Jakuzi', icon: '💦' },
+  { id: 'Doğa Manzaralı', label: 'Doğa Manzaralı', icon: '🌳' },
+  { id: 'Apart', label: 'Apart', icon: '🏙️' }
 ];
 
 // Konum seçenekleri
@@ -40,7 +46,7 @@ const defaultFormData: Omit<Villa, "id"> = {
   code: "",
   description: "",
   price: 0,
-  currency: 'USD',
+  currency: 'TRY',
   images: [],
   features: [],
   location: "",
@@ -74,6 +80,46 @@ const defaultFormData: Omit<Villa, "id"> = {
   isActive: false,
   isFeatured: false
 };
+
+// TinyMCE için ayarlar
+const editorConfig = {
+  menubar: false,
+  plugins: [
+    'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
+    'searchreplace', 'visualblocks', 'fullscreen',
+    'insertdatetime', 'table', 'help', 'wordcount', 'code'
+  ],
+  toolbar: 'undo redo | formatselect | ' +
+    'bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter ' +
+    'alignright alignjustify | bullist numlist outdent indent | ' +
+    'link | removeformat | code | help',
+  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+  color_map: [
+    '000000', 'Siyah',
+    'FF0000', 'Kırmızı',
+    '00FF00', 'Yeşil',
+    '0000FF', 'Mavi',
+    'FFFF00', 'Sarı',
+    'FF00FF', 'Magenta',
+    '00FFFF', 'Cyan',
+    '800000', 'Koyu Kırmızı',
+    '008000', 'Koyu Yeşil',
+    '000080', 'Koyu Mavi',
+    '808000', 'Zeytin',
+    '800080', 'Mor',
+    '008080', 'Turkuaz',
+    '808080', 'Gri',
+    'C0C0C0', 'Açık Gri',
+    'FFFFFF', 'Beyaz'
+  ],
+  color_cols: 4,
+  height: 300,
+  language: 'tr',
+  language_url: 'https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/tr.js'
+};
+
+// API anahtarını .env dosyasından alıyoruz
+const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || '';
 
 export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormProps) {
   const { villas, loading } = useVilla();
@@ -120,7 +166,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
           cityCenter: initialData.distances?.cityCenter || 0
         },
         features: initialData.features || [],
-        currency: initialData.currency || 'USD',
+        currency: initialData.currency || 'TRY',
         images: initialData.images || [],
         isActive: initialData.isActive || false,
         isFeatured: initialData.isFeatured || false
@@ -457,13 +503,30 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
 
             <div className="col-span-1 md:col-span-2 space-y-2">
               <label className="block text-sm font-medium text-gray-700">Açıklama</label>
-              <textarea
+              <Editor
+                apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                rows={4}
-                required
+                onEditorChange={(content: any) => setFormData({ ...formData, description: content })}
+                init={{
+                  height: 400,
+                  menubar: false,
+                  plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                    'preview', 'searchreplace', 'visualblocks', 'fullscreen',
+                    'insertdatetime', 'table', 'wordcount'
+                  ],
+                  toolbar: 'undo redo | formatselect | ' +
+                    'bold italic underline | forecolor backcolor | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'removeformat | help',
+                  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                  // language ayarlarını kaldırdık
+                  // ... diğer ayarlar aynı kalacak ...
+                }}
               />
+              <p className="text-sm text-gray-500 mt-2">
+                Villa açıklamasını zengin metin formatında düzenleyebilirsiniz
+              </p>
             </div>
 
             <div className="col-span-1 md:col-span-2 space-y-2">

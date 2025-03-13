@@ -244,11 +244,6 @@ export default function VillaCard({ villa, onEdit, onDelete }: VillaCardProps) {
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col justify-center max-w-md">
-              <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
-                {villa.description}
-              </p>
-            </div>
           </div>
         </div>
       </div>

@@ -9,6 +9,8 @@ import Image from 'next/image';
 import { currencies, CurrencyCode } from '@/utils/currency';
 import { addDays, differenceInDays } from 'date-fns';
 import AlertModal from './AlertModal';
+import { toast } from 'react-hot-toast';
+import SeasonalPriceModal from './SeasonalPriceModal';
 
 // Türkçe lokalizasyonu kaydet
 registerLocale('tr', tr);
@@ -51,6 +53,7 @@ export default function VillaCalendar({
   const [alertMessage, setAlertMessage] = useState('');
   const [guestName, setGuestName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showSeasonalPriceModal, setShowSeasonalPriceModal] = useState(false);
 
   useEffect(() => {
     if (showNewEventModal) {
@@ -145,12 +148,36 @@ export default function VillaCalendar({
     const [start, end] = update;
     
     if (start && end) {
-      // Seçilen tarih aralığında rezerve edilmiş gün var mı kontrol et
-      const hasReservedDate = excludedDates.some(date => {
-        return date >= start && date <= end;
+      // Seçilen tarih aralığındaki tüm günleri kontrol et
+      const selectedDates = [];
+      const currentDate = new Date(start);
+      while (currentDate <= end) {
+        selectedDates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Seçilen tarihler içinde çakışma kontrolü
+      const hasConflict = selectedDates.some(selectedDate => {
+        const matchingDate = excludedDates.find(
+          excluded => 
+            excluded.date.getDate() === selectedDate.getDate() &&
+            excluded.date.getMonth() === selectedDate.getMonth() &&
+            excluded.date.getFullYear() === selectedDate.getFullYear()
+        );
+
+        if (!matchingDate) return false;
+
+        // Eğer seçilen tarih bir giriş günü ise ve seçilen aralığın son günü ise çakışma yok
+        if (matchingDate.isCheckIn && selectedDate.getTime() === end.getTime()) return false;
+
+        // Eğer seçilen tarih bir çıkış günü ise ve seçilen aralığın ilk günü ise çakışma yok
+        if (matchingDate.isCheckOut && selectedDate.getTime() === start.getTime()) return false;
+
+        // Diğer tüm durumlar için çakışma var
+        return !matchingDate.isCheckIn && !matchingDate.isCheckOut;
       });
 
-      if (hasReservedDate) {
+      if (hasConflict) {
         setAlertMessage('Seçilen tarih aralığında rezerve edilmiş günler bulunmaktadır.');
         setShowAlert(true);
         return;
@@ -179,11 +206,64 @@ export default function VillaCalendar({
     const endDate = new Date(event.end);
 
     while (currentDate <= endDate) {
-      dates.push(new Date(currentDate));
+      // Giriş ve çıkış günlerini özel olarak işaretleyelim
+      const isCheckInDay = currentDate.getTime() === new Date(event.start).getTime();
+      const isCheckOutDay = currentDate.getTime() === endDate.getTime();
+      
+      dates.push({
+        date: new Date(currentDate),
+        isCheckIn: isCheckInDay,
+        isCheckOut: isCheckOutDay
+      });
+      
       currentDate.setDate(currentDate.getDate() + 1);
     }
     return dates;
   });
+
+  const handleSeasonalPriceAdd = async (seasonalPrice: { months: number[]; price: number; }, event: CalendarEvent) => {
+    try {
+      const response = await fetch(`/api/villas/${villa.id}/seasonal-prices`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          price: seasonalPrice.price,
+          startDate: event.start,
+          endDate: event.end,
+          currency: event.currency,
+          months: seasonalPrice.months
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Sezonluk fiyat eklenemedi');
+      }
+
+      toast.success('Sezonluk fiyat başarıyla eklendi');
+    } catch (error) {
+      console.error('Sezonluk fiyat ekleme hatası:', error);
+      toast.error('Sezonluk fiyat eklenirken bir hata oluştu');
+    }
+  };
+
+  const handleDeleteSeasonalPrice = async (id: string) => {
+    try {
+      const response = await fetch(`/api/villas/${villa.id}/seasonal-prices?priceId=${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Silme işlemi başarısız oldu');
+      }
+
+      toast.success('Sezonluk fiyat başarıyla silindi');
+    } catch (error) {
+      console.error('Silme hatası:', error);
+      toast.error('Sezonluk fiyat silinirken bir hata oluştu');
+    }
+  };
 
   return (
     <>
@@ -245,15 +325,29 @@ export default function VillaCalendar({
                           minDate={new Date()}
                           monthsShown={window.innerWidth >= 768 ? 2 : 1}
                           inline
-                          excludeDates={excludedDates}
-                          dayClassName={(date: Date): string => {
-                            const isExcluded = excludedDates.some(
-                              excludedDate => 
-                                excludedDate.getDate() === date.getDate() &&
-                                excludedDate.getMonth() === date.getMonth() &&
-                                excludedDate.getFullYear() === date.getFullYear()
+                          filterDate={(date: Date) => {
+                            const matchingDate = excludedDates.find(
+                              excluded => 
+                                excluded.date.getDate() === date.getDate() &&
+                                excluded.date.getMonth() === date.getMonth() &&
+                                excluded.date.getFullYear() === date.getFullYear()
                             );
-                            return isExcluded ? 'react-datepicker__day--reserved' : '';
+                            return !matchingDate || matchingDate.isCheckIn || matchingDate.isCheckOut;
+                          }}
+                          dayClassName={(date: Date): string => {
+                            const matchingDate = excludedDates.find(
+                              excluded => 
+                                excluded.date.getDate() === date.getDate() &&
+                                excluded.date.getMonth() === date.getMonth() &&
+                                excluded.date.getFullYear() === date.getFullYear()
+                            );
+
+                            if (matchingDate) {
+                              if (matchingDate.isCheckIn) return 'react-datepicker__day--check-in';
+                              if (matchingDate.isCheckOut) return 'react-datepicker__day--check-out';
+                              return 'react-datepicker__day--reserved';
+                            }
+                            return '';
                           }}
                           calendarClassName="!w-full !border-0 !shadow-none modern-datepicker"
                           wrapperClassName="!block !w-full"
@@ -456,15 +550,29 @@ export default function VillaCalendar({
                     minDate={new Date()}
                     monthsShown={2}
                     inline
-                    excludeDates={excludedDates}
-                    dayClassName={(date: Date): string => {
-                      const isExcluded = excludedDates.some(
-                        excludedDate => 
-                          excludedDate.getDate() === date.getDate() &&
-                          excludedDate.getMonth() === date.getMonth() &&
-                          excludedDate.getFullYear() === date.getFullYear()
+                    filterDate={(date: Date) => {
+                      const matchingDate = excludedDates.find(
+                        excluded => 
+                          excluded.date.getDate() === date.getDate() &&
+                          excluded.date.getMonth() === date.getMonth() &&
+                          excluded.date.getFullYear() === date.getFullYear()
                       );
-                      return isExcluded ? 'react-datepicker__day--reserved' : '';
+                      return !matchingDate || matchingDate.isCheckIn || matchingDate.isCheckOut;
+                    }}
+                    dayClassName={(date: Date): string => {
+                      const matchingDate = excludedDates.find(
+                        excluded => 
+                          excluded.date.getDate() === date.getDate() &&
+                          excluded.date.getMonth() === date.getMonth() &&
+                          excluded.date.getFullYear() === date.getFullYear()
+                      );
+
+                      if (matchingDate) {
+                        if (matchingDate.isCheckIn) return 'react-datepicker__day--check-in';
+                        if (matchingDate.isCheckOut) return 'react-datepicker__day--check-out';
+                        return 'react-datepicker__day--reserved';
+                      }
+                      return '';
                     }}
                     calendarClassName="!w-full !border-0 !shadow-none modern-datepicker"
                     wrapperClassName="!block !w-full"
@@ -616,6 +724,37 @@ export default function VillaCalendar({
                     .react-datepicker__day--reserved.react-datepicker__day--in-selecting-range {
                       background-color: #fee2e2 !important;
                       color: #ef4444 !important;
+                    }
+
+                    .react-datepicker__day--check-in {
+                      background: linear-gradient(135deg, white 50%, #fee2e2 50%) !important;
+                      position: relative;
+                    }
+
+                    .react-datepicker__day--check-out {
+                      background: linear-gradient(315deg, white 50%, #fee2e2 50%) !important;
+                      position: relative;
+                    }
+
+                    .react-datepicker__day--check-in:hover,
+                    .react-datepicker__day--check-out:hover {
+                      background: linear-gradient(135deg, #dbeafe 50%, #dbeafe 50%) !important;
+                    }
+
+                    .react-datepicker__day--check-in.react-datepicker__day--in-selecting-range {
+                      background: linear-gradient(135deg, #3b82f6 50%, #fee2e2 50%) !important;
+                      color: white !important;
+                    }
+
+                    .react-datepicker__day--check-out.react-datepicker__day--in-selecting-range {
+                      background: linear-gradient(315deg, #3b82f6 50%, #fee2e2 50%) !important;
+                      color: white !important;
+                    }
+
+                    .react-datepicker__day--check-in.react-datepicker__day--in-range,
+                    .react-datepicker__day--check-out.react-datepicker__day--in-range {
+                      background: #3b82f6 !important;
+                      color: white !important;
                     }
                   `}</style>
 
@@ -828,6 +967,15 @@ export default function VillaCalendar({
         onClose={() => setShowAlert(false)}
         message={alertMessage}
       />
+
+      {showSeasonalPriceModal && (
+        <SeasonalPriceModal
+          villa={villa}
+          onClose={() => setShowSeasonalPriceModal(false)}
+          onSave={handleSeasonalPriceAdd}
+          onDelete={handleDeleteSeasonalPrice}
+        />
+      )}
     </>
   );
 } 

@@ -1,29 +1,21 @@
 "use client";
 import { Villa } from "@/types/villa";
 import VillaCard from "@/components/VillaCard";
-import SearchFilters, { FilterOptions, SortOption } from "@/components/SearchFilters";
 import { useState, useEffect } from "react";
-import { IconSearch, IconFilter, IconChevronDown } from "@/components/Icons";
+import { IconSearch } from "@/components/Icons";
 import Modal from "@/components/Modal";
 import VillaForm from "@/components/VillaForm";
+import { SortOption } from "@/components/SearchFilters";
 
-// Lokasyon listesi
-const locationOptions = [
-  { value: 'kalkan', label: 'Kalkan' },
-  { value: 'fethiye', label: 'Fethiye' },
-  { value: 'kas', label: 'Kaş' },
-  { value: 'demre', label: 'Demre' }
-];
+
 
 export default function VillasPage() {
   const [villas, setVillas] = useState<Villa[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState<FilterOptions>({ features: [] });
   const [sortBy, setSortBy] = useState<SortOption>("name-asc");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedVilla, setSelectedVilla] = useState<Villa | null>(null);
 
   // Villaları getir
@@ -131,21 +123,15 @@ export default function VillasPage() {
 
   const filteredVillas = villas
     .filter(villa => {
-      // Null check ekleyelim
       if (!villa) return false;
 
-      const matchesSearch = (
+      return (
         villa.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        villa.location.toLowerCase().includes(searchQuery.toLowerCase())
+        villa.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (villa.originalName?.toLowerCase() || '').includes(searchQuery.toLowerCase())
       );
-
-      const matchesFeatures = filters.features.length === 0 || 
-        filters.features.every(feature => villa.features.includes(feature));
-
-      return matchesSearch && matchesFeatures;
     })
     .sort((a, b) => {
-      // Null check ekleyelim
       if (!a || !b) return 0;
 
       switch (sortBy) {
@@ -218,18 +204,6 @@ export default function VillasPage() {
               </button>
             </div>
 
-            {/* Filtre Açma Butonu - Sadece Mobilde */}
-            <button
-              onClick={() => setIsFilterOpen(true)}
-              className="lg:hidden flex items-center justify-between w-full px-4 py-2.5 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <IconFilter className="w-5 h-5" />
-                <span>Filtreler</span>
-              </div>
-              <IconChevronDown className="w-5 h-5" />
-            </button>
-
             {/* Sıralama Seçeneği */}
             <div className="flex items-center gap-2">
               <select
@@ -249,16 +223,6 @@ export default function VillasPage() {
       {/* Ana İçerik */}
       <div className="flex-1 overflow-auto">
         <div className="flex h-full">
-          {/* Filtre Bileşeni */}
-          <SearchFilters
-            onSearch={setSearchQuery}
-            onFilter={setFilters}
-            onSort={setSortBy}
-            locationOptions={locationOptions}
-            isOpen={isFilterOpen}
-            onClose={() => setIsFilterOpen(false)}
-          />
-
           {/* Villa Listesi */}
           <div className="flex-1 p-4 lg:p-8 overflow-y-auto modern-scrollbar hover-scrollbar">
             <div className="mb-4">

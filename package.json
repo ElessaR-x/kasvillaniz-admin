@@ -18,6 +18,9 @@
     "@headlessui/react": "^2.2.0",
     "@prisma/client": "^6.2.1",
     "@radix-ui/react-switch": "^1.1.2",
+    "@tinymce/tinymce-react": "^6.0.0",
+    "@tiptap/react": "^2.11.5",
+    "@tiptap/starter-kit": "^2.11.5",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-big-calendar": "^1.16.0",
     "@types/react-calendar": "^3.9.0",
@@ -40,6 +43,7 @@
     "react-datepicker": "^7.6.0",
     "react-dom": "^18.3.1",
     "react-dropzone": "^14.3.5",
+    "react-hot-toast": "^2.5.2",
     "recharts": "^2.15.0",
     "sharp": "^0.33.5",
     "uuid": "^11.0.5"

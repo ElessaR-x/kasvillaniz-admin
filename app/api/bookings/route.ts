@@ -71,31 +71,42 @@ export async function POST(request: Request) {
         }, { status: 404 });
       }
 
-      // Tarih çakışması kontrolü
-      const existingBooking = await prisma.booking.findFirst({
+      // Yeni tarih çakışması kontrolü
+      const existingBookings = await prisma.booking.findMany({
         where: {
           villaId: body.villaId,
-          OR: [
-            {
-              AND: [
-                { startDate: { lte: new Date(body.start) } },
-                { endDate: { gte: new Date(body.start) } }
-              ]
-            },
-            {
-              AND: [
-                { startDate: { lte: new Date(body.end) } },
-                { endDate: { gte: new Date(body.end) } }
-              ]
-            }
-          ],
           NOT: {
             status: 'cancelled'
           }
         }
       });
 
-      if (existingBooking) {
+      const newStart = new Date(body.start);
+      const newEnd = new Date(body.end);
+
+      // Tarih çakışması kontrolü
+      const hasConflict = existingBookings.some(booking => {
+        const bookingStart = new Date(booking.startDate);
+        const bookingEnd = new Date(booking.endDate);
+
+        // Yeni rezervasyonun başlangıcı, mevcut rezervasyonun çıkış günüyse izin ver
+        if (newStart.getTime() === bookingEnd.getTime()) return false;
+
+        // Yeni rezervasyonun bitişi, mevcut rezervasyonun giriş günüyse izin ver
+        if (newEnd.getTime() === bookingStart.getTime()) return false;
+
+        // Diğer durumlar için çakışma kontrolü
+        // Yeni rezervasyon mevcut rezervasyonun tarih aralığında mı?
+        const isOverlapping = (
+          (newStart < bookingEnd && newEnd > bookingStart) &&
+          // Giriş/çıkış günleri hariç
+          !(newStart.getTime() === bookingEnd.getTime() || newEnd.getTime() === bookingStart.getTime())
+        );
+
+        return isOverlapping;
+      });
+
+      if (hasConflict) {
         return NextResponse.json({
           error: 'Tarih çakışması',
           details: 'Seçilen tarihler için başka bir rezervasyon bulunmaktadır'
@@ -105,8 +116,8 @@ export async function POST(request: Request) {
       // Rezervasyonu oluştur
       const booking = await prisma.booking.create({
         data: {
-          startDate: new Date(body.start),
-          endDate: new Date(body.end),
+          startDate: newStart,
+          endDate: newEnd,
           status: body.status || 'pending',
           price: body.price || villa.price,
           currency: body.currency || villa.currency,

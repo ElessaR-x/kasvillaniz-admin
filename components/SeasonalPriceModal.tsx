@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Villa } from '@/types/villa';
 import { CalendarEvent } from '@/types/calendar';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -12,6 +12,14 @@ interface SeasonalPrice {
   id: string;
   startDate: Date;
   endDate: Date;
+  price: number;
+  currency: CurrencyCode;
+}
+
+interface SeasonalPriceResponse {
+  id: string;
+  startDate: string;
+  endDate: string;
   price: number;
   currency: CurrencyCode;
 }
@@ -36,16 +44,12 @@ export default function SeasonalPriceModal({ villa, onClose, onSave, onDelete }:
   ]);
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(villa.currency);
 
-  useEffect(() => {
-    fetchSeasonalPrices();
-  }, [villa.id]);
-
-  const fetchSeasonalPrices = async () => {
+  const fetchSeasonalPrices = useCallback(async () => {
     try {
       const response = await fetch(`/api/villas/${villa.id}/seasonal-prices`);
-      const data = await response.json();
+      const data: SeasonalPriceResponse[] = await response.json();
       if (response.ok) {
-        setSeasonalPrices(data.map((price: any) => ({
+        setSeasonalPrices(data.map((price) => ({
           ...price,
           startDate: new Date(price.startDate),
           endDate: new Date(price.endDate)
@@ -56,7 +60,11 @@ export default function SeasonalPriceModal({ villa, onClose, onSave, onDelete }:
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [villa.id]);
+
+  useEffect(() => {
+    fetchSeasonalPrices();
+  }, [villa.id, fetchSeasonalPrices]);
 
   const handleDelete = async (id: string) => {
     if (!onDelete) return;

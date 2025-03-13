@@ -6,7 +6,6 @@ import { currencies, CurrencyCode } from '@/utils/currency';
 import { useVilla } from '@/store/VillaContext';
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
-import dynamic from "next/dynamic";
 import { Editor } from '@tinymce/tinymce-react';
 
 
@@ -81,45 +80,10 @@ const defaultFormData: Omit<Villa, "id"> = {
   isFeatured: false
 };
 
-// TinyMCE için ayarlar
-const editorConfig = {
-  menubar: false,
-  plugins: [
-    'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-    'searchreplace', 'visualblocks', 'fullscreen',
-    'insertdatetime', 'table', 'help', 'wordcount', 'code'
-  ],
-  toolbar: 'undo redo | formatselect | ' +
-    'bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter ' +
-    'alignright alignjustify | bullist numlist outdent indent | ' +
-    'link | removeformat | code | help',
-  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-  color_map: [
-    '000000', 'Siyah',
-    'FF0000', 'Kırmızı',
-    '00FF00', 'Yeşil',
-    '0000FF', 'Mavi',
-    'FFFF00', 'Sarı',
-    'FF00FF', 'Magenta',
-    '00FFFF', 'Cyan',
-    '800000', 'Koyu Kırmızı',
-    '008000', 'Koyu Yeşil',
-    '000080', 'Koyu Mavi',
-    '808000', 'Zeytin',
-    '800080', 'Mor',
-    '008080', 'Turkuaz',
-    '808080', 'Gri',
-    'C0C0C0', 'Açık Gri',
-    'FFFFFF', 'Beyaz'
-  ],
-  color_cols: 4,
-  height: 300,
-  language: 'tr',
-  language_url: 'https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/tr.js'
-};
+// TinyMCE için ayar
 
 // API anahtarını .env dosyasından alıyoruz
-const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || '';
+
 
 export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormProps) {
   const { villas, loading } = useVilla();
@@ -506,7 +470,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
               <Editor
                 apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
                 value={formData.description}
-                onEditorChange={(content: any) => setFormData({ ...formData, description: content })}
+                onEditorChange={(content: string) => setFormData({ ...formData, description: content })}
                 init={{
                   height: 400,
                   menubar: false,

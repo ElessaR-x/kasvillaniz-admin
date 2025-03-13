@@ -163,6 +163,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Fiyat ID\'si gerekli' }, { status: 400 });
     }
 
+    const seasonalPrice = await prisma.seasonalPrice.findUnique({
+      where: { id: priceId }
+    });
+
+    if (!seasonalPrice || seasonalPrice.villaId !== id) {
+      return NextResponse.json({ error: 'Geçersiz fiyat ID\'si' }, { status: 404 });
+    }
+
     await prisma.seasonalPrice.delete({
       where: { id: priceId }
     });

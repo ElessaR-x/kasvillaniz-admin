@@ -8,6 +8,9 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
+# Env dosyasını kopyala
+COPY .env ./
+
 # Bağımlılıkları yükle
 RUN npm install
 
@@ -28,6 +31,7 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.env ./.env
 
 # Environment değişkenlerini ayarla
 ENV NODE_ENV=production

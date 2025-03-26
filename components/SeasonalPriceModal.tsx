@@ -34,7 +34,7 @@ interface SeasonalPriceModalProps {
   onDelete?: (id: string) => Promise<void>;
 }
 
-export default function SeasonalPriceModal({ villa, onClose, onSave, onDelete }: SeasonalPriceModalProps) {
+export default function SeasonalPriceModal({ villa, onClose, onSave }: SeasonalPriceModalProps) {
   const [seasonalPrices, setSeasonalPrices] = useState<SeasonalPrice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [price, setPrice] = useState<number>(villa.price);
@@ -67,14 +67,21 @@ export default function SeasonalPriceModal({ villa, onClose, onSave, onDelete }:
   }, [villa.id, fetchSeasonalPrices]);
 
   const handleDelete = async (id: string) => {
-    if (!onDelete) return;
-    
     try {
-      await onDelete(id);
-      // Listeden sil
+      const response = await fetch(`/api/villas/${villa.id}/seasonal-prices?priceId=${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Silme işlemi başarısız oldu');
+      }
+
+      // Başarılı silme işleminden sonra listeyi güncelle
       setSeasonalPrices(prices => prices.filter(p => p.id !== id));
+      
     } catch (error) {
       console.error('Sezonluk fiyat silinirken hata:', error);
+      alert('Fiyat silinirken bir hata oluştu');
     }
   };
 
@@ -215,18 +222,16 @@ export default function SeasonalPriceModal({ villa, onClose, onSave, onDelete }:
                             })}
                           </p>
                         </div>
-                        {onDelete && (
-                          <button
-                            onClick={() => handleDelete(price.id)}
-                            className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
-                            title="Sil"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleDelete(price.id)}
+                          className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
+                          title="Sil"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   ))}

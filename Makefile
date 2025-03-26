@@ -9,6 +9,7 @@ all: build run
 
 # Docker image'ı oluştur
 build:
+	@echo "$$GITHUB_ENV_VARS" > .env
 	docker build -t $(DOCKER_IMAGE) .
 
 # Uygulamayı çalıştır
@@ -42,4 +43,9 @@ prisma-generate:
 	npx prisma generate
 
 build-local:
-	npm run build 
+	npm run build
+
+# Github Secrets'tan env oluştur
+.PHONY: create-env
+create-env:
+	@echo "$$GITHUB_ENV_VARS" > .env 

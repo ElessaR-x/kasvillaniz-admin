@@ -114,6 +114,8 @@ export async function PUT(
       email: body.email,
       tourismLicenseNumber: body.tourismLicenseNumber,
       mapLink: body.mapLink,
+      lat: body.lat ? Number(body.lat) : null,
+      lng: body.lng ? Number(body.lng) : null,
       rating: body.rating ? Number(body.rating) : null,
       reviewCount: body.reviews ? Number(body.reviews) : null,
       amenities: body.amenities || [],

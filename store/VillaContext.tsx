@@ -151,9 +151,15 @@ export function VillaProvider({ children }: { children: ReactNode }) {
       const villa = villas.find(v => v.id === villaId);
       if (!villa) throw new Error('Villa bulunamadı');
       
+      const updatedSeasonalPrice = {
+        ...seasonalPrice,
+        startDate: new Date(seasonalPrice.startDate),
+        endDate: new Date(seasonalPrice.endDate)
+      };
+      
       const updatedVilla = {
         ...villa,
-        seasonalPrices: [...(villa.seasonalPrices || []), seasonalPrice]
+        seasonalPrices: [...(villa.seasonalPrices || []), updatedSeasonalPrice]
       };
       
       await updateVilla(updatedVilla);

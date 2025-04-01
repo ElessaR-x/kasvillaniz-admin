@@ -9,6 +9,7 @@ import { IconArrowLeft } from '@/components/Icons';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import AlertModal from '@/components/AlertModal';
 import { useSearchParams } from 'next/navigation';
+import { CurrencyCode } from '@/utils/currency';
 
 type AlertType = 'error' | 'success' | 'warning' | 'info';
 
@@ -22,7 +23,7 @@ interface SeasonalPrice {
   startDate: string;
   endDate: string;
   price: number;
-  currency: string;
+  currency: CurrencyCode;
 }
 
 export default function PricingPage() {
@@ -91,7 +92,7 @@ export default function PricingPage() {
         startDate: event.start,
         endDate: event.end,
         price: Number(seasonalPrice.price),
-        currency: currentVilla.currency,
+        currency: currentVilla.currency as CurrencyCode,
         months: seasonalPrice.months.map(Number)
       };
 
@@ -134,7 +135,7 @@ export default function PricingPage() {
         status: 'confirmed',
         villaId: selectedVilla,
         price: seasonalPrice.price,
-        currency: currentVilla.currency,
+        currency: currentVilla.currency as CurrencyCode,
         villaName: currentVilla.name,
         villaLocation: currentVilla.location,
         maxGuests: currentVilla.maxGuests,

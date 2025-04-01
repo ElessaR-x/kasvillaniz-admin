@@ -51,7 +51,7 @@ export default function AvailabilityCalendar({ events, villa, numberOfMonths = 3
     const price = event?.price || seasonalPrice?.price || villa.price;
     const currency = (event?.currency || seasonalPrice?.currency || villa.currency) as CurrencyCode;
     const status = event?.title === 'Müsait Değil' ? 'blocked' : event?.status || 'available';
-    const title = event?.title || (seasonalPrice ? `Sezonluk Fiyat: ${formatPrice(seasonalPrice.price, seasonalPrice.currency)}` : '');
+    const title = event?.title || (seasonalPrice ? `Sezonluk Fiyat: ${formatPrice(seasonalPrice.price, seasonalPrice.currency as CurrencyCode)}` : '');
     const guestName = event?.contactPerson?.fullName || '';
 
     return {

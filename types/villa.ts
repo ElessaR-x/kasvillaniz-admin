@@ -3,8 +3,8 @@ import { CalendarEvent } from './calendar';
 
 export interface SeasonalPrice {
   id?: string;
-  startDate: string | number | Date;
-  endDate: string | number | Date;
+  startDate: Date;
+  endDate: Date;
   price: number;
   currency: CurrencyCode;
   months: number[];
@@ -20,7 +20,7 @@ export interface Amenity {
 export interface Villa {
   id: string;
   name: string;
-  originalName: string;
+  originalName?: string;
   code: string;
   description: string;
   price: number;
@@ -34,8 +34,8 @@ export interface Villa {
   
   // Yeni eklenen alanlar
   rating?: number;
-  reviews?: number;
-  amenities: Amenity[];
+  reviewCount?: number;
+  amenities?: { icon: string; name: string; }[];
   size?: string;
   tags: string[];
   discount?: string;
@@ -43,7 +43,13 @@ export interface Villa {
   isFeatured: boolean;
   
   // Mevcut alanlar
-  seasonalPrices?: SeasonalPrice[];
+  seasonalPrices?: {
+    startDate: Date;
+    endDate: Date;
+    price: number;
+    currency: CurrencyCode;
+    months: number[];
+  }[];
   ownerName: string;
   identityNumber: string;
   phoneNumber: string;
@@ -52,7 +58,7 @@ export interface Villa {
   email: string;
   tourismLicenseNumber: string;
   minStayDays: number;
-  distances: {
+  distances?: {
     miniMarket: number;    // metre
     restaurant: number;    // metre
     publicTransport: number; // metre
@@ -61,5 +67,7 @@ export interface Villa {
     cityCenter: number;   // metre
   };
   mapLink?: string;
+  lat?: number;
+  lng?: number;
   events?: CalendarEvent[];
 } 

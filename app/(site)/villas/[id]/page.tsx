@@ -146,27 +146,27 @@ export default function VillaPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-gray-600">Mini Market</p>
-              <p className="font-medium">{villa.distances.miniMarket}m</p>
+              <p className="font-medium">{villa.distances?.miniMarket}m</p>
             </div>
             <div>
               <p className="text-gray-600">Restaurant</p>
-              <p className="font-medium">{villa.distances.restaurant}m</p>
+              <p className="font-medium">{villa.distances?.restaurant}m</p>
             </div>
             <div>
               <p className="text-gray-600">Toplu Taşıma</p>
-              <p className="font-medium">{villa.distances.publicTransport}m</p>
+              <p className="font-medium">{villa.distances?.publicTransport}m</p>
             </div>
             <div>
               <p className="text-gray-600">Plaj</p>
-              <p className="font-medium">{villa.distances.beach}m</p>
+              <p className="font-medium">{villa.distances?.beach}m</p>
             </div>
             <div>
               <p className="text-gray-600">Havalimanı</p>
-              <p className="font-medium">{villa.distances.airport}m</p>
+              <p className="font-medium">{villa.distances?.airport}m</p>
             </div>
             <div>
               <p className="text-gray-600">Şehir Merkezi</p>
-              <p className="font-medium">{villa.distances.cityCenter}m</p>
+              <p className="font-medium">{villa.distances?.cityCenter}m</p>
             </div>
           </div>
         </div>

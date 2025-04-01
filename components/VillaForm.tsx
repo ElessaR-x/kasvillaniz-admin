@@ -7,6 +7,7 @@ import { useVilla } from '@/store/VillaContext';
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { Editor } from '@tinymce/tinymce-react';
+import MapPicker from './MapPicker';
 
 
 
@@ -71,13 +72,15 @@ const defaultFormData: Omit<Villa, "id"> = {
   mapLink: "",
   seasonalPrices: [],
   rating: 0,
-  reviews: 0,
+  reviewCount: 0,
   amenities: [],
   size: "",
   tags: [],
   discount: "",
   isActive: false,
-  isFeatured: false
+  isFeatured: false,
+  lat: 36.1993,
+  lng: 29.6397,
 };
 
 // TinyMCE için ayar
@@ -116,7 +119,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
         tags: initialData.tags || [],
         price: initialData.price || 0,
         rating: initialData.rating || 0,
-        reviews: initialData.reviews || 0,
+        reviewCount: initialData.reviewCount || 0,
         bedrooms: initialData.bedrooms || 1,
         bathrooms: initialData.bathrooms || 1,
         maxGuests: initialData.maxGuests || 2,
@@ -133,7 +136,9 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
         currency: initialData.currency || 'TRY',
         images: initialData.images || [],
         isActive: initialData.isActive || false,
-        isFeatured: initialData.isFeatured || false
+        isFeatured: initialData.isFeatured || false,
+        lat: initialData.lat || 36.1993,
+        lng: initialData.lng || 29.6397,
       });
       setImages(initialData.images || []);
     }
@@ -154,13 +159,13 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
         bathrooms: Number(formData.bathrooms),
         maxGuests: Number(formData.maxGuests),
         minStayDays: Number(formData.minStayDays),
-        distances: {
-          miniMarket: Number(formData.distances.miniMarket),
-          restaurant: Number(formData.distances.restaurant),
-          publicTransport: Number(formData.distances.publicTransport),
-          beach: Number(formData.distances.beach),
-          airport: Number(formData.distances.airport),
-          cityCenter: Number(formData.distances.cityCenter)
+        distances: formData.distances || {
+          miniMarket: 0,
+          restaurant: 0,
+          publicTransport: 0,
+          beach: 0,
+          airport: 0,
+          cityCenter: 0
         }
       };
 
@@ -175,11 +180,18 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
 
   
 
-  const handleDistanceChange = (field: keyof Villa['distances'], value: number) => {
+  const handleDistanceChange = (field: keyof NonNullable<Villa['distances']>, value: number) => {
     setFormData(prev => ({
       ...prev,
       distances: {
-        ...prev.distances,
+        ...(prev.distances || {
+          miniMarket: 0,
+          restaurant: 0,
+          publicTransport: 0,
+          beach: 0,
+          airport: 0,
+          cityCenter: 0
+        }),
         [field]: value
       }
     }));
@@ -342,8 +354,8 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
               <label className="block text-sm font-medium text-gray-700">Değerlendirme Sayısı</label>
               <input
                 type="number"
-                value={formData.reviews}
-                onChange={(e) => setFormData({ ...formData, reviews: Number(e.target.value) })}
+                value={formData.reviewCount}
+                onChange={(e) => setFormData({ ...formData, reviewCount: Number(e.target.value) })}
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                 min="0"
               />
@@ -397,7 +409,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
                 </div>
               </div>
               <p className="text-sm text-gray-500">
-                Seçili para birimi: {currencies[formData.currency].name}
+                Seçili para birimi: {currencies[formData.currency as CurrencyCode].name}
               </p>
             </div>
 
@@ -633,23 +645,28 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
         {/* Yeni Distances Tab */}
         <div className={activeTab === 'distances' ? 'block' : 'hidden'}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Google Maps Link alanı */}
+            {/* Google Maps Picker */}
             <div className="col-span-1 md:col-span-2 space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">📍</span>
-                  Google Maps Linki
+                  Villa Konumu
                 </div>
               </label>
-              <input
-                type="url"
-                value={formData.mapLink}
-                onChange={(e) => setFormData({ ...formData, mapLink: e.target.value })}
-                placeholder="https://maps.google.com/..."
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+              <MapPicker
+                onLocationSelect={(lat, lng) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    lat,
+                    lng,
+                    mapLink: `https://www.google.com/maps?q=${lat},${lng}`
+                  }));
+                }}
+                initialLat={formData.lat}
+                initialLng={formData.lng}
               />
               <p className="text-sm text-gray-500">
-                Villanın Google Maps linkini buraya yapıştırın
+                Haritada villanın konumunu seçin veya marker&apos;ı sürükleyerek konumu güncelleyin
               </p>
             </div>
 
@@ -664,7 +681,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
               <div className="relative">
                 <input
                   type="number"
-                  value={formData.distances.miniMarket}
+                  value={formData.distances?.miniMarket || 0}
                   onChange={(e) => handleDistanceChange('miniMarket', Number(e.target.value))}
                   className="w-full pl-4 pr-16 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                   min="0"
@@ -687,7 +704,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
               <div className="relative">
                 <input
                   type="number"
-                  value={formData.distances.restaurant}
+                  value={formData.distances?.restaurant || 0}
                   onChange={(e) => handleDistanceChange('restaurant', Number(e.target.value))}
                   className="w-full pl-4 pr-16 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                   min="0"
@@ -710,7 +727,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
               <div className="relative">
                 <input
                   type="number"
-                  value={formData.distances.publicTransport}
+                  value={formData.distances?.publicTransport || 0}
                   onChange={(e) => handleDistanceChange('publicTransport', Number(e.target.value))}
                   className="w-full pl-4 pr-16 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                   min="0"
@@ -733,7 +750,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
               <div className="relative">
                 <input
                   type="number"
-                  value={formData.distances.beach}
+                  value={formData.distances?.beach || 0}
                   onChange={(e) => handleDistanceChange('beach', Number(e.target.value))}
                   className="w-full pl-4 pr-16 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                   min="0"
@@ -756,7 +773,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
               <div className="relative">
                 <input
                   type="number"
-                  value={formData.distances.airport}
+                  value={formData.distances?.airport || 0}
                   onChange={(e) => handleDistanceChange('airport', Number(e.target.value))}
                   className="w-full pl-4 pr-16 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                   min="0"
@@ -779,7 +796,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
               <div className="relative">
                 <input
                   type="number"
-                  value={formData.distances.cityCenter}
+                  value={formData.distances?.cityCenter || 0}
                   onChange={(e) => handleDistanceChange('cityCenter', Number(e.target.value))}
                   className="w-full pl-4 pr-16 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                   min="0"
@@ -828,14 +845,14 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
         {/* Yeni amenities tab içeriği */}
         <div className={activeTab === 'amenities' ? 'block' : 'hidden'}>
           <div className="space-y-4">
-            {formData.amenities.map((amenity, index) => (
+            {(formData.amenities || []).map((amenity, index) => (
               <div key={index} className="flex gap-4">
                 <div className="flex-1">
                   <input
                     type="text"
                     value={amenity.icon}
                     onChange={(e) => {
-                      const newAmenities = [...formData.amenities];
+                      const newAmenities = [...(formData.amenities || [])];
                       newAmenities[index].icon = e.target.value;
                       setFormData({ ...formData, amenities: newAmenities });
                     }}
@@ -848,7 +865,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
                     type="text"
                     value={amenity.name}
                     onChange={(e) => {
-                      const newAmenities = [...formData.amenities];
+                      const newAmenities = [...(formData.amenities || [])];
                       newAmenities[index].name = e.target.value;
                       setFormData({ ...formData, amenities: newAmenities });
                     }}
@@ -859,7 +876,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
                 <button
                   type="button"
                   onClick={() => {
-                    const newAmenities = formData.amenities.filter((_, i) => i !== index);
+                    const newAmenities = (formData.amenities || []).filter((_, i) => i !== index);
                     setFormData({ ...formData, amenities: newAmenities });
                   }}
                   className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -873,7 +890,7 @@ export default function VillaForm({ onSubmit, onCancel, initialData}: VillaFormP
               onClick={() => {
                 setFormData({
                   ...formData,
-                  amenities: [...formData.amenities, { icon: '', name: '' }]
+                  amenities: [...(formData.amenities || []), { icon: '', name: '' }]
                 });
               }}
               className="w-full px-4 py-2.5 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
